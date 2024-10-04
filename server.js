@@ -21,6 +21,7 @@ app.post('/api/messages', (req, res) => {
         if (messages.length > 100) {
             messages = messages.slice(0, 100); // Keep only the latest 100 messages
         }
+        console.log(`messages length: ${messages.length}`)
         res.sendStatus(200);
     } else {
         res.status(400).send('Invalid message');
