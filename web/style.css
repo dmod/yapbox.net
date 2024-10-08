@@ -56,3 +56,13 @@ button:hover {
     background-color: #e6e6e6;
     border-radius: 3px;
 }
+
+.message-text {
+    margin-bottom: 5px;
+}
+
+.message-timestamp {
+    font-size: 0.8em;
+    color: #666666;
+    text-align: right;
+}

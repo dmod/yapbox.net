@@ -51,7 +51,12 @@
                 const response = await fetch('/api/messages');
                 if (response.ok) {
                     const messages = await response.json();
-                    messagesContainer.innerHTML = messages.map(msg => `<div class="message">${msg}</div>`).join('');
+                    messagesContainer.innerHTML = messages.map(msg => `
+                        <div class="message">
+                            <div class="message-text">${msg.text}</div>
+                            <div class="message-timestamp">${new Date(msg.timestamp).toLocaleString()}</div>
+                        </div>
+                    `).join('');
                 } else {
                     console.error('Failed to fetch messages');
                 }

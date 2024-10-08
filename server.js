@@ -15,13 +15,17 @@ app.get('/api/messages', (req, res) => {
 });
 
 app.post('/api/messages', (req, res) => {
-    const message = req.body.message;
-    if (message && message.length <= 140) {
-        messages.unshift(message); // Add new message to the beginning of the array
+    const messageText = req.body.message;
+    if (messageText && messageText.length <= 140) {
+        const message = {
+            text: messageText,
+            timestamp: new Date().toISOString()
+        };
+        messages.unshift(message); // Add new message object to the beginning of the array
         if (messages.length > 100) {
             messages = messages.slice(0, 100); // Keep only the latest 100 messages
         }
-        console.log(`messages length: ${messages.length}`)
+        console.log(`messages length: ${messages.length}`);
         res.sendStatus(200);
     } else {
         res.status(400).send('Invalid message');
