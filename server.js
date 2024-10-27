@@ -1,32 +1,53 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const path = require('path');
+const sqlite3 = require('sqlite3').verbose();
+const { open } = require('sqlite');
+
 const app = express();
 const port = 3000;
 
-// In-memory storage for messages (replace this with a database in production)
-let messages = [];
+let db;
+
+async function initializeDatabase() {
+    db = await open({
+        filename: 'messages.db',
+        driver: sqlite3.Database
+    });
+
+    await db.exec(`
+        CREATE TABLE IF NOT EXISTS messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            text TEXT NOT NULL,
+            timestamp TEXT NOT NULL
+        )
+    `);
+}
 
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'web')));
 
-app.get('/api/messages', (req, res) => {
-    res.json(messages);
+app.get('/api/messages', async (req, res) => {
+    try {
+        const messages = await db.all('SELECT * FROM messages ORDER BY timestamp DESC LIMIT 100');
+        res.json(messages);
+    } catch (error) {
+        console.error('Error fetching messages:', error);
+        res.status(500).send('Internal Server Error');
+    }
 });
 
-app.post('/api/messages', (req, res) => {
+app.post('/api/messages', async (req, res) => {
     const messageText = req.body.message;
     if (messageText && messageText.length <= 140) {
-        const message = {
-            text: messageText,
-            timestamp: new Date().toISOString()
-        };
-        messages.unshift(message); // Add new message object to the beginning of the array
-        if (messages.length > 100) {
-            messages = messages.slice(0, 100); // Keep only the latest 100 messages
+        try {
+            await db.run('INSERT INTO messages (text, timestamp) VALUES (?, ?)', 
+                [messageText, new Date().toISOString()]);
+            res.sendStatus(200);
+        } catch (error) {
+            console.error('Error inserting message:', error);
+            res.status(500).send('Internal Server Error');
         }
-        console.log(`messages length: ${messages.length}`);
-        res.sendStatus(200);
     } else {
         res.status(400).send('Invalid message');
     }
@@ -36,6 +57,10 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'web', 'index.html'));
 });
 
-app.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}`);
+initializeDatabase().then(() => {
+    app.listen(port, () => {
+        console.log(`Server running at http://localhost:${port}`);
+    });
+}).catch(err => {
+    console.error('Failed to initialize database:', err);
 });
