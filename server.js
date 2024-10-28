@@ -4,6 +4,7 @@ const path = require('path');
 const sqlite3 = require('sqlite3');
 const db3 = new sqlite3.verbose().Database;
 const { open } = require('sqlite');
+const { runMigrations } = require('./db/migrations');
 
 const app = express();
 const port = 3000;
@@ -20,23 +21,12 @@ async function initializeDatabase() {
             filename: dbPath,
             driver: db3
         });
-        console.log(`Database initialized at: ${dbPath}`);
-
-        await db.exec(`
-            CREATE TABLE IF NOT EXISTS messages (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                text TEXT NOT NULL,
-                timestamp TEXT NOT NULL,
-                ip_address TEXT NOT NULL
-            )
-        `);
-
-        await db.exec(`
-            UPDATE messages SET ip_address = 'unknown' 
-            WHERE ip_address IS NULL
-        `);
+        
+        await runMigrations(db);
+        console.log('Database initialization and migrations completed');
     } catch (error) {
         console.error('Database initialization error:', error);
+        throw error;  // Re-throw to prevent server start if DB init fails
     }
 }
 
