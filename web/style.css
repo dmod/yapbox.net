@@ -1,3 +1,9 @@
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
 body {
     font-family: 'Courier New', monospace;
     background-color: #f0f0f0;
@@ -5,6 +11,16 @@ body {
     max-width: 800px;
     margin: 0 auto;
     padding: 20px;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+}
+
+.container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
 }
 
 h1 {
@@ -44,9 +60,12 @@ button:hover {
 #messages {
     border: 1px solid #cccccc;
     padding: 10px;
-    height: 400px;
-    overflow-y: auto;
     background-color: #ffffff;
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
 }
 
 .message {
@@ -76,4 +95,36 @@ button:hover {
 
 .message-ip {
     font-family: monospace;
+}
+
+/* Add loading animation */
+@keyframes pulse {
+    0% { opacity: 0.6; }
+    50% { opacity: 0.3; }
+    100% { opacity: 0.6; }
+}
+
+.loading {
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* Loading overlay for messages container */
+.messages-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    font-style: italic;
+    color: #666;
+}
+
+/* Disable form while submitting */
+.form-disabled {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+/* Add transition for smooth opacity changes */
+#message-form, #messages {
+    transition: opacity 0.2s ease-in-out;
 }

@@ -31,24 +31,44 @@ function formatMessage(message) {
     `;
 }
 
+let isLoading = false;
+let isSubmitting = false;
+
 async function fetchMessages() {
+    if (isLoading) return; // Prevent multiple simultaneous fetches
+    
+    const messagesDiv = document.getElementById('messages');
     try {
+        isLoading = true;
+        messagesDiv.classList.add('loading');
+        
         const response = await fetch('/api/messages');
         const messages = await response.json();
-        document.getElementById('messages').innerHTML = 
-            messages.map(message => formatMessage(message)).join('');
+        
+        messagesDiv.innerHTML = messages.map(message => formatMessage(message)).join('');
     } catch (error) {
         console.error('Error:', error);
+        messagesDiv.innerHTML = '<div class="messages-loading">Error loading messages. Please try again.</div>';
+    } finally {
+        isLoading = false;
+        messagesDiv.classList.remove('loading');
     }
 }
 
 async function postMessage(event) {
     event.preventDefault();
+    
+    if (isSubmitting) return; // Prevent multiple submissions
+    
+    const form = document.getElementById('message-form');
     const input = document.getElementById('message-input');
     const message = input.value.trim();
     
     if (message) {
         try {
+            isSubmitting = true;
+            form.classList.add('form-disabled');
+            
             const response = await fetch('/api/messages', {
                 method: 'POST',
                 headers: {
@@ -60,16 +80,26 @@ async function postMessage(event) {
             if (response.ok) {
                 input.value = '';
                 await fetchMessages();
+            } else {
+                throw new Error('Failed to post message');
             }
         } catch (error) {
             console.error('Error:', error);
+            // Optionally show error to user
+            alert('Failed to post message. Please try again.');
+        } finally {
+            isSubmitting = false;
+            form.classList.remove('form-disabled');
         }
     }
 }
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
+    const messagesDiv = document.getElementById('messages');
+    messagesDiv.innerHTML = '<div class="messages-loading">Loading messages...</div>';
+    
     document.getElementById('message-form').addEventListener('submit', postMessage);
     fetchMessages();
-    setInterval(fetchMessages, 5000); // Fetch messages every 5 seconds
+    setInterval(fetchMessages, 5000);
 }); 
