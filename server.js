@@ -49,6 +49,7 @@ app.post('/api/messages', async (req, res) => {
 
     if (messageText && messageText.length <= 140) {
         try {
+            console.log(`Incoming message from ${ip}: ${messageText}`);
             await db.run(
                 'INSERT INTO messages (text, timestamp, ip_address) VALUES (?, ?, ?)',
                 [messageText, new Date().toISOString(), ip]
