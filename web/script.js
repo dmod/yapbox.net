@@ -7,9 +7,21 @@ function escapeHtml(unsafe) {
         .replace(/'/g, "&#039;");
 }
 
+// Add this function to generate a consistent color from a string (IP address)
+function stringToColor(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    // Generate pastel colors for better readability
+    const h = hash % 360;
+    return `hsl(${h}, 70%, 85%)`; // Pastel version
+}
+
 function formatMessage(message) {
+    const backgroundColor = stringToColor(message.ip_address);
     return `
-        <div class="message">
+        <div class="message" style="background-color: ${backgroundColor}">
             <div class="message-text">${escapeHtml(message.text)}</div>
             <div class="message-info">
                 <span class="message-ip">From: ${escapeHtml(message.ip_address)}</span>

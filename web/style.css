@@ -53,11 +53,11 @@ button:hover {
     margin-bottom: 10px;
     word-wrap: break-word;
     padding: 5px;
-    background-color: #e6e6e6;
     border-radius: 3px;
 }
 
 .message-text {
+    color: #000000;
     margin-bottom: 5px;
 }
 
@@ -71,7 +71,7 @@ button:hover {
     display: flex;
     justify-content: space-between;
     font-size: 0.8em;
-    color: #666666;
+    color: #333333;
 }
 
 .message-ip {
