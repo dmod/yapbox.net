@@ -1,73 +1,19 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 
 <head>
-    <meta charset="UTF-8">
-    <link rel="stylesheet" href="style.css">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>yapbox</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
     <h1>yapbox</h1>
     <form id="message-form">
-        <input type="text" id="message-input" maxlength="140" placeholder="Enter your message (max 140 characters)"
-            required>
-        <button type="submit">Yap</button>
+        <input type="text" id="message-input" maxlength="140" placeholder="What's on your mind?" required>
+        <button type="submit">Yap!</button>
     </form>
     <div id="messages"></div>
-
-    <script>
-        const messageForm = document.getElementById('message-form');
-        const messageInput = document.getElementById('message-input');
-        const messagesContainer = document.getElementById('messages');
-
-        messageForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const message = messageInput.value.trim();
-            if (message) {
-                try {
-                    const response = await fetch('/api/messages', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ message }),
-                    });
-                    if (response.ok) {
-                        messageInput.value = '';
-                        fetchMessages();
-                    } else {
-                        console.error('Failed to post message');
-                    }
-                } catch (error) {
-                    console.error('Error:', error);
-                }
-            }
-        });
-
-        async function fetchMessages() {
-            try {
-                const response = await fetch('/api/messages');
-                if (response.ok) {
-                    const messages = await response.json();
-                    messagesContainer.innerHTML = messages.map(msg => `
-                        <div class="message">
-                            <div class="message-text">${msg.text}</div>
-                            <div class="message-timestamp">${new Date(msg.timestamp).toLocaleString()}</div>
-                        </div>
-                    `).join('');
-                } else {
-                    console.error('Failed to fetch messages');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-            }
-        }
-
-        fetchMessages();
-        setInterval(fetchMessages, 5000); // Fetch messages every 5 seconds
-    </script>
+    <script src="script.js"></script>
 </body>
 
 </html>

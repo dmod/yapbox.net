@@ -66,3 +66,14 @@ button:hover {
     color: #666666;
     text-align: right;
 }
+
+.message-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8em;
+    color: #666666;
+}
+
+.message-ip {
+    font-family: monospace;
+}

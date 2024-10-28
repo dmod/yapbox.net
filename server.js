@@ -1,27 +1,43 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const path = require('path');
-const sqlite3 = require('sqlite3').verbose();
+const sqlite3 = require('sqlite3');
+const db3 = new sqlite3.verbose().Database;
 const { open } = require('sqlite');
 
 const app = express();
 const port = 3000;
+const isProd = process.env.NODE_ENV === 'production';
+const dbPath = isProd ? '/data/messages.db' : './dev.db';
 
 let db;
 
-async function initializeDatabase() {
-    db = await open({
-        filename: '/data/messages.db',
-        driver: sqlite3.Database
-    });
+app.set('trust proxy', true);
 
-    await db.exec(`
-        CREATE TABLE IF NOT EXISTS messages (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            text TEXT NOT NULL,
-            timestamp TEXT NOT NULL
-        )
-    `);
+async function initializeDatabase() {
+    try {
+        db = await open({
+            filename: dbPath,
+            driver: db3
+        });
+        console.log(`Database initialized at: ${dbPath}`);
+
+        await db.exec(`
+            CREATE TABLE IF NOT EXISTS messages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                text TEXT NOT NULL,
+                timestamp TEXT NOT NULL,
+                ip_address TEXT NOT NULL
+            )
+        `);
+
+        await db.exec(`
+            UPDATE messages SET ip_address = 'unknown' 
+            WHERE ip_address IS NULL
+        `);
+    } catch (error) {
+        console.error('Database initialization error:', error);
+    }
 }
 
 app.use(bodyParser.json());
@@ -39,10 +55,14 @@ app.get('/api/messages', async (req, res) => {
 
 app.post('/api/messages', async (req, res) => {
     const messageText = req.body.message;
+    const ip = req.ip || req.socket.remoteAddress;
+
     if (messageText && messageText.length <= 140) {
         try {
-            await db.run('INSERT INTO messages (text, timestamp) VALUES (?, ?)',
-                [messageText, new Date().toISOString()]);
+            await db.run(
+                'INSERT INTO messages (text, timestamp, ip_address) VALUES (?, ?, ?)',
+                [messageText, new Date().toISOString(), ip]
+            );
             res.sendStatus(200);
         } catch (error) {
             console.error('Error inserting message:', error);
@@ -59,8 +79,8 @@ app.get('/', (req, res) => {
 
 initializeDatabase().then(() => {
     app.listen(port, () => {
-        console.log(`Server running at http://localhost:${port}`);
+        console.log(`Server running on port ${port}`);
     });
 }).catch(err => {
-    console.error('Failed to initialize database:', err);
+    console.error('Failed to start server:', err);
 });
