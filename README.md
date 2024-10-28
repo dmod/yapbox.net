@@ -1,1 +1,1 @@
-[https://yapbox.net](yapbox.net)
+[yapbox.net](https://yapbox.net)
