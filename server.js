@@ -11,7 +11,7 @@ let db;
 
 async function initializeDatabase() {
     db = await open({
-        filename: 'messages.db',
+        filename: '/data/messages.db',
         driver: sqlite3.Database
     });
 
@@ -41,7 +41,7 @@ app.post('/api/messages', async (req, res) => {
     const messageText = req.body.message;
     if (messageText && messageText.length <= 140) {
         try {
-            await db.run('INSERT INTO messages (text, timestamp) VALUES (?, ?)', 
+            await db.run('INSERT INTO messages (text, timestamp) VALUES (?, ?)',
                 [messageText, new Date().toISOString()]);
             res.sendStatus(200);
         } catch (error) {
