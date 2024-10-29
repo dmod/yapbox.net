@@ -47,7 +47,7 @@ app.post('/api/messages', async (req, res) => {
     const messageText = req.body.message;
     const ip = req.ip || req.socket.remoteAddress;
 
-    if (messageText && messageText.length <= 240) {
+    if (messageText && messageText.length <= 3000) {
         try {
             console.log(`Incoming message from ${ip}: ${messageText}`);
             await db.run(
