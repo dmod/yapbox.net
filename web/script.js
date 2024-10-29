@@ -40,6 +40,9 @@ async function fetchMessages() {
         const messages = await response.json();
         
         messagesDiv.innerHTML = messages.map(message => formatMessage(message)).join('');
+        
+        // Update message count
+        document.getElementById('message-count').textContent = messages.length;
     } catch (error) {
         console.error('Error:', error);
     }

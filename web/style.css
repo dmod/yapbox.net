@@ -24,14 +24,26 @@ body {
 }
 
 h1 {
+    position: relative;
     text-align: center;
     border-bottom: 2px solid #999999;
     padding-bottom: 20px;
     margin-bottom: 20px;
     color: #333333;
-    font-size: 50px;
-    letter-spacing: 6px;
-    font-weight: 700;
+    font-size: 48px;
+    letter-spacing: 2px;
+    font-weight: 800;
+}
+
+.slogan {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    font-size: 16px;
+    font-style: italic;
+    color: #666666;
+    margin-right: 10px;
+    margin-bottom: 5px;
 }
 
 #message-form {
