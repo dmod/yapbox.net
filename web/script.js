@@ -31,27 +31,17 @@ function formatMessage(message) {
     `;
 }
 
-let isLoading = false;
 let isSubmitting = false;
 
-async function fetchMessages() {
-    if (isLoading) return; // Prevent multiple simultaneous fetches
-    
+async function fetchMessages() {    
     const messagesDiv = document.getElementById('messages');
     try {
-        isLoading = true;
-        messagesDiv.classList.add('loading');
-        
         const response = await fetch('/api/messages');
         const messages = await response.json();
         
         messagesDiv.innerHTML = messages.map(message => formatMessage(message)).join('');
     } catch (error) {
         console.error('Error:', error);
-        messagesDiv.innerHTML = '<div class="messages-loading">Error loading messages. Please try again.</div>';
-    } finally {
-        isLoading = false;
-        messagesDiv.classList.remove('loading');
     }
 }
 
@@ -96,9 +86,6 @@ async function postMessage(event) {
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    const messagesDiv = document.getElementById('messages');
-    messagesDiv.innerHTML = '<div class="messages-loading">Loading messages...</div>';
-    
     document.getElementById('message-form').addEventListener('submit', postMessage);
     fetchMessages();
     setInterval(fetchMessages, 5000);
