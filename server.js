@@ -35,7 +35,7 @@ app.use(express.static(path.join(__dirname, 'web')));
 
 app.get('/api/messages', async (req, res) => {
     try {
-        const messages = await db.all('SELECT * FROM messages ORDER BY timestamp DESC LIMIT 100');
+        const messages = await db.all('SELECT * FROM messages ORDER BY timestamp DESC');
         res.json(messages);
     } catch (error) {
         console.error('Error fetching messages:', error);
