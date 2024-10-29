@@ -44,6 +44,8 @@ h1 {
     color: #666666;
     margin-right: 10px;
     margin-bottom: 5px;
+    transform-origin: center;
+    display: inline-block;
 }
 
 #message-form {
@@ -122,4 +124,16 @@ button:hover {
 /* Add transition for smooth opacity changes */
 #message-form, #messages {
     transition: opacity 0.2s ease-in-out;
+}
+
+@keyframes jiggle {
+    0% { transform: rotate(0deg); }
+    25% { transform: rotate(-5deg); }
+    75% { transform: rotate(5deg); }
+    100% { transform: rotate(0deg); }
+}
+
+/* Add animation class */
+.jiggle {
+    animation: jiggle 0.3s ease-in-out;
 }

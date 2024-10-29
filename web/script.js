@@ -41,8 +41,19 @@ async function fetchMessages() {
         
         messagesDiv.innerHTML = messages.map(message => formatMessage(message)).join('');
         
-        // Update message count
-        document.getElementById('message-count').textContent = messages.length;
+        // Update message count with animation
+        const countElement = document.getElementById('message-count');
+        const oldCount = parseInt(countElement.textContent);
+        const newCount = messages.length;
+        
+        if (oldCount !== newCount) {
+            countElement.textContent = newCount;
+            // Trigger animation on the entire slogan
+            const sloganElement = document.querySelector('.slogan');
+            sloganElement.classList.remove('jiggle');
+            void sloganElement.offsetWidth; // Force reflow to restart animation
+            sloganElement.classList.add('jiggle');
+        }
     } catch (error) {
         console.error('Error:', error);
     }
@@ -92,4 +103,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('message-form').addEventListener('submit', postMessage);
     fetchMessages();
     setInterval(fetchMessages, 5000);
+});
+
+// Optional: Remove the animation class when it's done
+document.querySelector('.slogan').addEventListener('animationend', function() {
+    this.classList.remove('jiggle');
 }); 
