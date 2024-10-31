@@ -108,7 +108,18 @@ button:hover {
     display: flex;
     justify-content: space-between;
     font-size: 0.8em;
-    color: #333333;
+    color: #666666;
+}
+
+.message-meta {
+    display: flex;
+    gap: 8px;  /* Space between ID and IP */
+    align-items: center;
+}
+
+.message-number {
+    color: #888;
+    font-family: monospace;
 }
 
 .message-ip {

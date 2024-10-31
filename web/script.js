@@ -24,7 +24,10 @@ function formatMessage(message) {
         <div class="message" style="background-color: ${backgroundColor}">
             <div class="message-text">${escapeHtml(message.text)}</div>
             <div class="message-info">
-                <span class="message-ip">From: ${escapeHtml(message.ip_address)}</span>
+                <div class="message-meta">
+                    <span class="message-number">#${message.id}</span>
+                    <span class="message-ip"> - From ${escapeHtml(message.ip_address)}</span>
+                </div>
                 <span class="message-timestamp">${new Date(message.timestamp).toLocaleString()}</span>
             </div>
         </div>
@@ -33,19 +36,19 @@ function formatMessage(message) {
 
 let isSubmitting = false;
 
-async function fetchMessages() {    
+async function fetchMessages() {
     const messagesDiv = document.getElementById('messages');
     try {
         const response = await fetch('/api/messages');
         const messages = await response.json();
-        
+ 
         messagesDiv.innerHTML = messages.map(message => formatMessage(message)).join('');
-        
+
         // Update message count with animation
         const countElement = document.getElementById('message-count');
         const oldCount = parseInt(countElement.textContent);
         const newCount = messages.length;
-        
+
         if (oldCount !== newCount) {
             countElement.textContent = newCount;
             // Trigger animation on the entire slogan
@@ -61,18 +64,18 @@ async function fetchMessages() {
 
 async function postMessage(event) {
     event.preventDefault();
-    
+
     if (isSubmitting) return; // Prevent multiple submissions
-    
+
     const form = document.getElementById('message-form');
     const input = document.getElementById('message-input');
     const message = input.value.trim();
-    
+
     if (message) {
         try {
             isSubmitting = true;
             form.classList.add('form-disabled');
-            
+
             const response = await fetch('/api/messages', {
                 method: 'POST',
                 headers: {
@@ -80,7 +83,7 @@ async function postMessage(event) {
                 },
                 body: JSON.stringify({ message }),
             });
-            
+
             if (response.ok) {
                 input.value = '';
                 await fetchMessages();
@@ -106,6 +109,6 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Optional: Remove the animation class when it's done
-document.querySelector('.slogan').addEventListener('animationend', function() {
+document.querySelector('.slogan').addEventListener('animationend', function () {
     this.classList.remove('jiggle');
 }); 
