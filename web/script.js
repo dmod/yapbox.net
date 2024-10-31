@@ -75,10 +75,42 @@ async function fetchMessages() {
     }
 }
 
+// Add this array at the top with your other functions
+const feedbackMessages = [
+    "nice", "good one", "woah", "you so good at this ;)", "sweet", 
+    "omg", "neat", "great", "rad", "neat"
+];
+
+// Add this function to create and animate the feedback
+function showFeedbackAnimation() {
+    const message = feedbackMessages[Math.floor(Math.random() * feedbackMessages.length)];
+    const element = document.createElement('div');
+    element.className = 'feedback-animation';
+    element.textContent = message;
+    
+    // Random position within viewport
+    const x = Math.random() * (window.innerWidth - 200);
+    const y = Math.random() * (window.innerHeight - 100);
+    
+    // Random rotation between -20 and 20 degrees
+    const rotation = (Math.random() - 0.5) * 40;
+    
+    element.style.left = `${x}px`;
+    element.style.top = `${y}px`;
+    element.style.setProperty('--rotation', `${rotation}deg`);  // Set CSS variable for rotation
+    
+    document.body.appendChild(element);
+    
+    // Remove element after animation
+    element.addEventListener('animationend', () => {
+        element.remove();
+    });
+}
+
 async function postMessage(event) {
     event.preventDefault();
 
-    if (isSubmitting) return; // Prevent multiple submissions
+    if (isSubmitting) return;
 
     const form = document.getElementById('message-form');
     const input = document.getElementById('message-input');
@@ -100,12 +132,12 @@ async function postMessage(event) {
             if (response.ok) {
                 input.value = '';
                 await fetchMessages();
+                showFeedbackAnimation();
             } else {
                 throw new Error('Failed to post message');
             }
         } catch (error) {
             console.error('Error:', error);
-            // Optionally show error to user
             alert('Failed to post message. Please try again.');
         } finally {
             isSubmitting = false;
