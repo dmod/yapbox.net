@@ -68,6 +68,16 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'web', 'index.html'));
 });
 
+app.get('/api/message-count', async (req, res) => {
+    try {
+        const result = await db.get('SELECT MAX(id) as count FROM messages');
+        res.json({ count: result.count || 0 });
+    } catch (error) {
+        console.error('Error fetching message count:', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
+
 initializeDatabase().then(() => {
     app.listen(port, () => {
         console.log(`Server running on port ${port}`);

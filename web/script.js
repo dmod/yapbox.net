@@ -36,29 +36,42 @@ function formatMessage(message) {
 
 let isSubmitting = false;
 
-async function fetchMessages() {
-    const messagesDiv = document.getElementById('messages');
+async function updateMessageCount() {
     try {
-        const response = await fetch('/api/messages');
-        const messages = await response.json();
- 
-        messagesDiv.innerHTML = messages.map(message => formatMessage(message)).join('');
-
-        // Update message count with animation
+        const response = await fetch('/api/message-count');
+        const data = await response.json();
         const countElement = document.getElementById('message-count');
         const oldCount = parseInt(countElement.textContent);
-        const newCount = messages.length;
-
+        const newCount = data.count;
+        
         if (oldCount !== newCount) {
             countElement.textContent = newCount;
-            // Trigger animation on the entire slogan
             const sloganElement = document.querySelector('.slogan');
             sloganElement.classList.remove('jiggle');
-            void sloganElement.offsetWidth; // Force reflow to restart animation
+            void sloganElement.offsetWidth; // Force reflow
             sloganElement.classList.add('jiggle');
         }
     } catch (error) {
+        console.error('Error fetching message count:', error);
+    }
+}
+
+async function fetchMessages() {
+    
+    const messagesDiv = document.getElementById('messages');
+    try {
+        messagesDiv.classList.add('loading');
+        
+        const response = await fetch('/api/messages');
+        const messages = await response.json();
+        
+        messagesDiv.innerHTML = messages.map(message => formatMessage(message)).join('');
+        
+        // Update the count separately
+        await updateMessageCount();
+    } catch (error) {
         console.error('Error:', error);
+        messagesDiv.innerHTML = '<div class="messages-loading">Error loading messages. Please try again.</div>';
     }
 }
 
