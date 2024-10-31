@@ -43,7 +43,7 @@ async function updateMessageCount() {
         const countElement = document.getElementById('message-count');
         const oldCount = parseInt(countElement.textContent);
         const newCount = data.count;
-        
+
         if (oldCount !== newCount) {
             countElement.textContent = newCount;
             const sloganElement = document.querySelector('.slogan');
@@ -57,16 +57,16 @@ async function updateMessageCount() {
 }
 
 async function fetchMessages() {
-    
+
     const messagesDiv = document.getElementById('messages');
     try {
         messagesDiv.classList.add('loading');
-        
+
         const response = await fetch('/api/messages');
         const messages = await response.json();
-        
+
         messagesDiv.innerHTML = messages.map(message => formatMessage(message)).join('');
-        
+
         // Update the count separately
         await updateMessageCount();
     } catch (error) {
@@ -77,8 +77,8 @@ async function fetchMessages() {
 
 // Add this array at the top with your other functions
 const feedbackMessages = [
-    "nice", "good one", "woah", "you so good at this ;)", "sweet", 
-    "omg", "neat", "great", "rad", "neat"
+    "nice", "good one", "woah", "you are good at this ;)", "sweet",
+    "omg", "mood.", "so good ;)", "great!", "neat", "slay", "king"
 ];
 
 // Add this function to create and animate the feedback
@@ -87,20 +87,20 @@ function showFeedbackAnimation() {
     const element = document.createElement('div');
     element.className = 'feedback-animation';
     element.textContent = message;
-    
+
     // Random position within viewport
     const x = Math.random() * (window.innerWidth - 200);
     const y = Math.random() * (window.innerHeight - 100);
-    
+
     // Random rotation between -20 and 20 degrees
     const rotation = (Math.random() - 0.5) * 40;
-    
+
     element.style.left = `${x}px`;
     element.style.top = `${y}px`;
     element.style.setProperty('--rotation', `${rotation}deg`);  // Set CSS variable for rotation
-    
+
     document.body.appendChild(element);
-    
+
     // Remove element after animation
     element.addEventListener('animationend', () => {
         element.remove();
