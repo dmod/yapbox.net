@@ -13,9 +13,13 @@ function stringToColor(str) {
     for (let i = 0; i < str.length; i++) {
         hash = str.charCodeAt(i) + ((hash << 5) - hash);
     }
-    // Generate pastel colors for better readability
-    const h = hash % 360;
-    return `hsl(${h}, 70%, 85%)`; // Pastel version
+    
+    // Generate distinct, sophisticated colors
+    const hue = hash % 360;  // Full hue range
+    const saturation = 25 + (hash % 20);  // 25-45% saturation
+    const lightness = 65 + (hash % 15);   // 65-80% lightness
+    
+    return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
 }
 
 function formatMessage(message) {
@@ -78,7 +82,7 @@ async function fetchMessages() {
 // Add this array at the top with your other functions
 const feedbackMessages = [
     "nice", "good one", "woah", "you are good at this ;)", "sweet",
-    "omg", "mood.", "so good ;)", "great!", "neat", "slay", "king"
+    "omg", "mood.", "so good ;)", "😩", "great!", "neat", "slay", "king"
 ];
 
 // Add this function to create and animate the feedback
