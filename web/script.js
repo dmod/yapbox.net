@@ -14,10 +14,10 @@ function stringToColor(str) {
         hash = str.charCodeAt(i) + ((hash << 5) - hash);
     }
     
-    // Generate distinct, sophisticated colors
+    // Generate fun, vibrant colors that are still readable
     const hue = hash % 360;  // Full hue range
-    const saturation = 25 + (hash % 20);  // 25-45% saturation
-    const lightness = 65 + (hash % 15);   // 65-80% lightness
+    const saturation = 45 + (hash % 30);  // 45-75% saturation - more vibrant
+    const lightness = 80 + (hash % 12);   // 80-92% lightness - keeping it readable
     
     return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
 }
