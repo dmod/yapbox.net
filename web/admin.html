@@ -35,10 +35,10 @@
     <div class="admin-container">
         <h1>Admin Panel</h1>
         
-        <div id="loginSection" class="login-form">
+        <form id="loginForm" class="login-form" onsubmit="handleSubmit(event)">
             <input type="password" id="adminPassword" placeholder="Enter admin password">
-            <button onclick="login()">Login</button>
-        </div>
+            <button type="submit">Login</button>
+        </form>
 
         <div id="messageSection" class="hidden">
             <h2>Messages</h2>
@@ -50,6 +50,11 @@
 
     <script>
         let isAuthenticated = false;
+
+        function handleSubmit(event) {
+            event.preventDefault();
+            login();
+        }
 
         async function login() {
             const password = document.getElementById('adminPassword').value;
@@ -64,7 +69,7 @@
 
                 if (response.ok) {
                     isAuthenticated = true;
-                    document.getElementById('loginSection').classList.add('hidden');
+                    document.getElementById('loginForm').classList.add('hidden');
                     document.getElementById('messageSection').classList.remove('hidden');
                     loadMessages();
                 } else {
@@ -88,7 +93,7 @@
                         <div>
                             <strong>${new Date(msg.timestamp).toLocaleString()}</strong>
                             <p>${msg.text}</p>
-                            <small>IP: ${msg.ip_address}</small>
+                            <small>ID: ${msg.id} | IP: ${msg.ip_address}</small>
                         </div>
                         <button onclick="deleteMessage(${msg.id})">Delete</button>
                     </div>

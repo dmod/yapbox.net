@@ -49,7 +49,7 @@ async function initializeDatabase() {
             filename: dbPath,
             driver: db3
         });
-        
+
         await runMigrations(db);
         console.log('Database initialization and migrations completed');
     } catch (error) {
@@ -74,7 +74,7 @@ app.get('/admin', (req, res) => {
 
 app.post('/api/admin/login', async (req, res) => {
     const { password } = req.body;
-    
+
     try {
         const isValid = authenticatePassword(password);
         if (isValid) {
@@ -92,7 +92,7 @@ app.post('/api/admin/login', async (req, res) => {
 // Protected admin route - now requires authentication
 app.delete('/api/admin/messages/:id', requireAuth, async (req, res) => {
     const { id } = req.params;
-    
+
     try {
         await db.run('DELETE FROM messages WHERE id = ?', id);
         res.sendStatus(200);
