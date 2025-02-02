@@ -10,14 +10,14 @@ const session = require('express-session');
 
 // Static admin credentials - pre-computed hash of password with salt
 const ADMIN_SALT = 'f7d8e9c4b3a2';
-const ADMIN_HASH = '1ff05c10846d7f36a2610bf028c11816709f6a71515123f328167d496dda2dfa5a2b2b9fdcd300fd8802ecf9a96feb025cf0f49b28c9af82905ef02512521fdd';
+const PBKDF2_ITERATIONS = 650009; // High iteration count for single admin user
+const ADMIN_HASH = '6a2a986f8cd14cf7b2e770172b45306dc6834ca6b72c2a51ff17976b46700d2177e1bcdaacdc6596b0c0713572ec6a41b34541dfac60b8c33f26c9053a018060';
 
 const app = express();
 const port = 3000;
 const isProd = process.env.NODE_ENV === 'production';
 const dbPath = isProd ? '/data/messages.db' : './dev.db';
 
-// Session middleware configuration
 app.use(session({
     secret: crypto.randomBytes(32).toString('hex'),
     resave: false,
@@ -63,11 +63,10 @@ app.use(express.static(path.join(__dirname, 'web')));
 
 // Admin authentication function
 function authenticatePassword(password) {
-    const hashedInput = crypto.pbkdf2Sync(password, ADMIN_SALT, 1000, 64, 'sha512').toString('hex');
+    const hashedInput = crypto.pbkdf2Sync(password, ADMIN_SALT, PBKDF2_ITERATIONS, 64, 'sha512').toString('hex');
     return hashedInput === ADMIN_HASH;
 }
 
-// Admin routes
 app.get('/admin', (req, res) => {
     res.sendFile(path.join(__dirname, 'web', 'admin.html'));
 });
@@ -89,7 +88,6 @@ app.post('/api/admin/login', async (req, res) => {
     }
 });
 
-// Protected admin route - now requires authentication
 app.delete('/api/admin/messages/:id', requireAuth, async (req, res) => {
     const { id } = req.params;
 
@@ -102,7 +100,6 @@ app.delete('/api/admin/messages/:id', requireAuth, async (req, res) => {
     }
 });
 
-// Existing routes
 app.get('/api/messages', async (req, res) => {
     try {
         const messages = await db.all('SELECT * FROM messages ORDER BY timestamp DESC');
