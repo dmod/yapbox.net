@@ -185,6 +185,7 @@ button:hover {
     right: 20px;
     display: flex;
     align-items: center;
+    justify-content: center;
     background-color: #ffffff;
     border: 1px solid #cccccc;
     border-radius: 50px;
@@ -199,6 +200,7 @@ button:hover {
 .search-container.expanded {
     width: 300px;
     border-radius: 20px;
+    justify-content: flex-start;
 }
 
 .search-icon {
@@ -208,7 +210,6 @@ button:hover {
     flex-shrink: 0;
     cursor: pointer;
     transition: fill 0.3s ease;
-    margin-right: 4px;
 }
 
 .search-icon:hover {
@@ -216,10 +217,26 @@ button:hover {
 }
 
 .search-input-container {
+    position: absolute;
+    left: 40px;
+    top: 50%;
+    transform: translateY(-50%);
     flex-grow: 1;
     display: flex;
     flex-direction: column;
-    min-width: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+
+.search-container.expanded .search-input-container {
+    position: relative;
+    left: auto;
+    top: auto;
+    transform: none;
+    opacity: 1;
+    pointer-events: auto;
+    margin-left: 8px;
 }
 
 #search-input {
@@ -229,12 +246,6 @@ button:hover {
     font-size: 14px;
     color: #333333;
     background: transparent;
-    padding: 0 8px;
-    width: 0;
-    transition: width 0.3s ease;
-}
-
-.search-container.expanded #search-input {
     width: 100%;
 }
 
