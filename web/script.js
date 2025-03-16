@@ -39,6 +39,8 @@ function formatMessage(message) {
 }
 
 let isSubmitting = false;
+let currentMessages = [];
+let searchQuery = '';
 
 async function updateMessageCount() {
     try {
@@ -60,16 +62,31 @@ async function updateMessageCount() {
     }
 }
 
-async function fetchMessages() {
+function filterMessages() {
+    const query = searchQuery.toLowerCase();
+    const messagesContainer = document.getElementById('messages');
+    const messageElements = messagesContainer.getElementsByClassName('message');
 
+    for (const messageEl of messageElements) {
+        const messageText = messageEl.querySelector('.message-text').textContent.toLowerCase();
+        if (query === '' || messageText.includes(query)) {
+            messageEl.classList.remove('filtered-out');
+        } else {
+            messageEl.classList.add('filtered-out');
+        }
+    }
+}
+
+async function fetchMessages() {
     const messagesDiv = document.getElementById('messages');
     try {
         messagesDiv.classList.add('loading');
 
         const response = await fetch('/api/messages');
-        const messages = await response.json();
+        currentMessages = await response.json();
 
-        messagesDiv.innerHTML = messages.map(message => formatMessage(message)).join('');
+        messagesDiv.innerHTML = currentMessages.map(message => formatMessage(message)).join('');
+        filterMessages(); // Apply any existing filter
 
         // Update the count separately
         await updateMessageCount();
@@ -153,6 +170,32 @@ async function postMessage(event) {
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('message-form').addEventListener('submit', postMessage);
+    
+    // Add search container click handler
+    const searchContainer = document.querySelector('.search-container');
+    const searchIcon = document.querySelector('.search-icon');
+    const searchInput = document.getElementById('search-input');
+
+    searchIcon.addEventListener('click', () => {
+        searchContainer.classList.add('expanded');
+        searchInput.focus();
+    });
+
+    // Close search when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!searchContainer.contains(e.target) && searchContainer.classList.contains('expanded')) {
+            if (!searchInput.value) {
+                searchContainer.classList.remove('expanded');
+            }
+        }
+    });
+
+    // Add search input handler
+    searchInput.addEventListener('input', (e) => {
+        searchQuery = e.target.value;
+        filterMessages();
+    });
+    
     fetchMessages();
     setInterval(fetchMessages, 5000);
 });
