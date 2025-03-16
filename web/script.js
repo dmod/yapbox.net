@@ -66,14 +66,27 @@ function filterMessages() {
     const query = searchQuery.toLowerCase();
     const messagesContainer = document.getElementById('messages');
     const messageElements = messagesContainer.getElementsByClassName('message');
+    const searchContainer = document.querySelector('.search-container');
+    const resultsCountElement = document.querySelector('.search-results-count');
+    let visibleCount = 0;
 
     for (const messageEl of messageElements) {
         const messageText = messageEl.querySelector('.message-text').textContent.toLowerCase();
         if (query === '' || messageText.includes(query)) {
             messageEl.classList.remove('filtered-out');
+            visibleCount++;
         } else {
             messageEl.classList.add('filtered-out');
         }
+    }
+
+    // Update search container classes and results count
+    if (query) {
+        searchContainer.classList.add('has-query');
+        resultsCountElement.textContent = `${visibleCount} result${visibleCount !== 1 ? 's' : ''} found`;
+    } else {
+        searchContainer.classList.remove('has-query');
+        resultsCountElement.textContent = '';
     }
 }
 
@@ -186,6 +199,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!searchContainer.contains(e.target) && searchContainer.classList.contains('expanded')) {
             if (!searchInput.value) {
                 searchContainer.classList.remove('expanded');
+                searchContainer.classList.remove('has-query');
             }
         }
     });

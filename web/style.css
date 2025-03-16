@@ -198,6 +198,7 @@ button:hover {
 
 .search-container.expanded {
     width: 300px;
+    border-radius: 20px;
 }
 
 .search-icon {
@@ -207,14 +208,21 @@ button:hover {
     flex-shrink: 0;
     cursor: pointer;
     transition: fill 0.3s ease;
+    margin-right: 4px;
 }
 
 .search-icon:hover {
     fill: #666666;
 }
 
-#search-input {
+.search-input-container {
     flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+#search-input {
     border: none;
     outline: none;
     font-family: inherit;
@@ -228,6 +236,28 @@ button:hover {
 
 .search-container.expanded #search-input {
     width: 100%;
+}
+
+.search-results-count {
+    font-size: 12px;
+    font-weight: bold;
+    color: #666666;
+    padding: 4px 8px 0;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    height: 0;
+    overflow: hidden;
+}
+
+.search-container.expanded .search-results-count {
+    opacity: 1;
+    height: auto;
+}
+
+.search-container.expanded.has-query .search-results-count {
+    padding-top: 4px;
+    margin-top: 4px;
+    border-top: 1px solid #eee;
 }
 
 #search-input::placeholder {
