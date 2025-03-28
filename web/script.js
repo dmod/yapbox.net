@@ -41,24 +41,80 @@ function formatMessage(message) {
 let isSubmitting = false;
 let currentMessages = [];
 let searchQuery = '';
+let ws = null;
 
-async function updateMessageCount() {
-    try {
-        const response = await fetch('/api/message-count');
-        const data = await response.json();
-        const countElement = document.getElementById('message-count');
-        const oldCount = parseInt(countElement.textContent);
-        const newCount = data.count;
+function connectWebSocket() {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    console.log(`[WebSocket] Attempting to connect to ${protocol}//${window.location.host}`);
+    
+    ws = new WebSocket(`${protocol}//${window.location.host}`);
 
-        if (oldCount !== newCount) {
-            countElement.textContent = newCount;
-            const sloganElement = document.querySelector('.slogan');
-            sloganElement.classList.remove('jiggle');
-            void sloganElement.offsetWidth; // Force reflow
-            sloganElement.classList.add('jiggle');
-        }
-    } catch (error) {
-        console.error('Error fetching message count:', error);
+    ws.onopen = () => {
+        console.log('[WebSocket] Connection established');
+    };
+
+    ws.onmessage = (event) => {
+        console.log('[WebSocket] Received message:', event.data);
+        const update = JSON.parse(event.data);
+        handleWebSocketUpdate(update);
+    };
+
+    ws.onclose = (event) => {
+        console.log(`[WebSocket] Connection closed (code: ${event.code}, reason: ${event.reason})`);
+        console.log('[WebSocket] Attempting to reconnect in 1 second...');
+        setTimeout(connectWebSocket, 1000);
+    };
+
+    ws.onerror = (error) => {
+        console.error('[WebSocket] Connection error:', error);
+    };
+}
+
+function handleWebSocketUpdate(update) {
+    console.log(`[WebSocket] Processing update of type: ${update.type}`);
+    switch (update.type) {
+        case 'new':
+            console.log('[WebSocket] Adding new message:', update.data);
+            // Add new message at the beginning
+            currentMessages.unshift(update.data);
+            const messagesDiv = document.getElementById('messages');
+            const newMessageHtml = formatMessage(update.data);
+            messagesDiv.insertAdjacentHTML('afterbegin', newMessageHtml);
+            updateMessageCount(currentMessages.length);
+            showFeedbackAnimation();
+            console.log('[WebSocket] New message added successfully');
+            break;
+            
+        case 'delete':
+            console.log(`[WebSocket] Removing message with ID: ${update.data.id}`);
+            // Remove deleted message
+            currentMessages = currentMessages.filter(msg => msg.id !== update.data.id);
+            const messageElement = document.querySelector(`.message[data-id="${update.data.id}"]`);
+            if (messageElement) {
+                messageElement.remove();
+                console.log('[WebSocket] Message removed from DOM');
+            } else {
+                console.log('[WebSocket] Message element not found in DOM');
+            }
+            updateMessageCount(currentMessages.length);
+            console.log('[WebSocket] Message deletion processed');
+            break;
+            
+        default:
+            console.warn(`[WebSocket] Unknown update type received: ${update.type}`);
+    }
+}
+
+function updateMessageCount(count) {
+    const countElement = document.getElementById('message-count');
+    const oldCount = parseInt(countElement.textContent);
+    
+    if (oldCount !== count) {
+        countElement.textContent = count;
+        const sloganElement = document.querySelector('.slogan');
+        sloganElement.classList.remove('jiggle');
+        void sloganElement.offsetWidth; // Force reflow
+        sloganElement.classList.add('jiggle');
     }
 }
 
@@ -93,19 +149,24 @@ function filterMessages() {
 async function fetchMessages() {
     const messagesDiv = document.getElementById('messages');
     try {
+        console.log('[API] Fetching initial messages');
         messagesDiv.classList.add('loading');
 
         const response = await fetch('/api/messages');
         currentMessages = await response.json();
+        console.log(`[API] Received ${currentMessages.length} messages`);
 
         messagesDiv.innerHTML = currentMessages.map(message => formatMessage(message)).join('');
         filterMessages(); // Apply any existing filter
 
-        // Update the count separately
-        await updateMessageCount();
+        // Update the count
+        updateMessageCount(currentMessages.length);
+        console.log('[API] Initial messages loaded and displayed');
     } catch (error) {
-        console.error('Error:', error);
+        console.error('[API] Error fetching messages:', error);
         messagesDiv.innerHTML = '<div class="messages-loading">Error loading messages. Please try again.</div>';
+    } finally {
+        messagesDiv.classList.remove('loading');
     }
 }
 
@@ -152,6 +213,7 @@ async function postMessage(event) {
 
     if (message) {
         try {
+            console.log('[API] Submitting new message');
             isSubmitting = true;
             form.classList.add('form-disabled');
 
@@ -164,14 +226,13 @@ async function postMessage(event) {
             });
 
             if (response.ok) {
+                console.log('[API] Message submitted successfully');
                 input.value = '';
-                await fetchMessages();
-                showFeedbackAnimation();
             } else {
                 throw new Error('Failed to post message');
             }
         } catch (error) {
-            console.error('Error:', error);
+            console.error('[API] Error submitting message:', error);
             alert('Failed to post message. Please try again.');
         } finally {
             isSubmitting = false;
@@ -210,8 +271,11 @@ document.addEventListener('DOMContentLoaded', () => {
         filterMessages();
     });
     
+    // Initial load of messages
     fetchMessages();
-    setInterval(fetchMessages, 5000);
+    
+    // Connect WebSocket
+    connectWebSocket();
 });
 
 // Optional: Remove the animation class when it's done
