@@ -1,0 +1,24 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "resourceGroupName": {
+      "value": "yapbox-rg"
+    },
+    "appServiceName": {
+      "value": "yapbox-app"
+    },
+    "appServicePlanName": {
+      "value": "yapbox-plan"
+    },
+    "acrName": {
+      "value": "yapboxacr"
+    },
+    "containerImageName": {
+      "value": "yapbox"
+    },
+    "containerImageTag": {
+      "value": "latest"
+    }
+  }
+} 
