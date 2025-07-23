@@ -128,7 +128,9 @@ function filterMessages() {
 
     for (const messageEl of messageElements) {
         const messageText = messageEl.querySelector('.message-text').textContent.toLowerCase();
-        if (query === '' || messageText.includes(query)) {
+        const messageIp = messageEl.querySelector('.message-ip').textContent.toLowerCase();
+        
+        if (query === '' || messageText.includes(query) || messageIp.includes(query)) {
             messageEl.classList.remove('filtered-out');
             visibleCount++;
         } else {
