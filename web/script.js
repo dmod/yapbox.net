@@ -25,11 +25,11 @@ function stringToColor(str) {
 function formatMessage(message) {
     const backgroundColor = stringToColor(message.ip_address);
     return `
-        <div class="message" style="background-color: ${backgroundColor}">
+        <div class="message" id="${message.id}" style="background-color: ${backgroundColor}">
             <div class="message-text">${escapeHtml(message.text)}</div>
             <div class="message-info">
                 <div class="message-meta">
-                    <span class="message-number">#${message.id}</span>
+                    <a href="#${message.id}" class="message-number">#${message.id}</a>
                     <span class="message-ip"> - From ${escapeHtml(message.ip_address)}</span>
                 </div>
                 <span class="message-timestamp">${new Date(message.timestamp).toLocaleString()}</span>
@@ -89,7 +89,7 @@ function handleWebSocketUpdate(update) {
             console.log(`[WebSocket] Removing message with ID: ${update.data.id}`);
             // Remove deleted message
             currentMessages = currentMessages.filter(msg => msg.id !== update.data.id);
-            const messageElement = document.querySelector(`.message[data-id="${update.data.id}"]`);
+            const messageElement = document.querySelector(`#${update.data.id}`);
             if (messageElement) {
                 messageElement.remove();
                 console.log('[WebSocket] Message removed from DOM');
@@ -164,9 +164,12 @@ async function fetchMessages() {
         // Update the count
         updateMessageCount(currentMessages.length);
         console.log('[API] Initial messages loaded and displayed');
+        
+        return currentMessages; // Return the messages for promise chaining
     } catch (error) {
         console.error('[API] Error fetching messages:', error);
         messagesDiv.innerHTML = '<div class="messages-loading">Error loading messages. Please try again.</div>';
+        throw error; // Re-throw to handle in caller
     } finally {
         messagesDiv.classList.remove('loading');
     }
@@ -202,6 +205,28 @@ function showFeedbackAnimation() {
     element.addEventListener('animationend', () => {
         element.remove();
     });
+}
+
+// Function to handle anchor link navigation with smooth scrolling
+function handleAnchorNavigation() {
+    const hash = window.location.hash;
+    if (hash && hash.match(/^#\d+$/)) { // Check if hash is just a number
+        const messageId = hash.substring(1); // Remove the # symbol
+        const targetElement = document.getElementById(messageId);
+        if (targetElement) {
+            // Smooth scroll to the target message
+            targetElement.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'center' 
+            });
+            
+            // Add a highlight animation to make it obvious
+            targetElement.classList.add('message-highlighted');
+            setTimeout(() => {
+                targetElement.classList.remove('message-highlighted');
+            }, 5000); // 5 seconds to match the CSS animation
+        }
+    }
 }
 
 async function postMessage(event) {
@@ -273,8 +298,17 @@ document.addEventListener('DOMContentLoaded', () => {
         filterMessages();
     });
     
+    // Handle hash changes for anchor navigation
+    window.addEventListener('hashchange', handleAnchorNavigation);
+    
+    // Handle anchor navigation on page load
+    window.addEventListener('load', handleAnchorNavigation);
+    
     // Initial load of messages
-    fetchMessages();
+    fetchMessages().then(() => {
+        // Handle anchor navigation after messages are loaded
+        handleAnchorNavigation();
+    });
     
     // Connect WebSocket
     connectWebSocket();
