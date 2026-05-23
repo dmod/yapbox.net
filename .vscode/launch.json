@@ -9,8 +9,6 @@
           "<node_internals>/**"
         ],
         "program": "${workspaceFolder}/server.js",
-        "restart": true,
-        "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/nodemon",
         "console": "integratedTerminal",
         "internalConsoleOptions": "neverOpen"
       }

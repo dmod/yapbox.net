@@ -1,5 +1,3 @@
-# syntax = docker/dockerfile:1
-
 FROM node:current-slim as base
 
 LABEL fly_launch_runtime="Node.js"

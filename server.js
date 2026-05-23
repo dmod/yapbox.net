@@ -222,3 +222,15 @@ initializeDatabase().then(() => {
 }).catch(err => {
     console.error('Failed to start server:', err);
 });
+
+// Graceful shutdown - close server and release port
+function shutdown() {
+    console.log('[shutdown] Closing server...');
+    server.close(() => {
+        console.log('[shutdown] Server closed');
+        process.exit(0);
+    });
+}
+
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);
