@@ -46,30 +46,62 @@ let scrollIndicatorHideTimer = null;
 let otherYappers = 0;
 let connectionStatus = 'disconnected'; // 'connected', 'disconnected', 'reconnecting'
 
+let wsHasConnectedBefore = false;
+let wsReconnectDelay = 1000;
+const WS_RECONNECT_MAX_DELAY = 10000;
+
 function connectWebSocket() {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    console.log(`[WebSocket] Attempting to connect to ${protocol}//${window.location.host}`);
+    const wsUrl = `${protocol}//${window.location.host}`;
+    console.log(`[WebSocket] Attempting to connect to ${wsUrl} (backoff: ${wsReconnectDelay}ms)`);
     
-    ws = new WebSocket(`${protocol}//${window.location.host}`);
+    // Clean up old WebSocket if it exists
+    if (ws) {
+        ws.onopen = null;
+        ws.onmessage = null;
+        ws.onclose = null;
+        ws.onerror = null;
+    }
+    
+    ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
         console.log('[WebSocket] Connection established');
         connectionStatus = 'connected';
+        wsReconnectDelay = 1000; // Reset backoff on successful connection
         updateStatusIndicator();
+        // On reconnect, re-fetch messages to catch anything missed while disconnected
+        if (wsHasConnectedBefore) {
+            console.log('[WebSocket] Reconnected — re-fetching messages to sync state');
+            fetchMessages();
+        }
+        wsHasConnectedBefore = true;
     };
 
     ws.onmessage = (event) => {
-        console.log('[WebSocket] Received message:', event.data);
-        const update = JSON.parse(event.data);
-        handleWebSocketUpdate(update);
+        console.log('[WebSocket] Received raw message:', event.data);
+        let update;
+        try {
+            update = JSON.parse(event.data);
+        } catch (error) {
+            console.error('[WebSocket] Failed to parse message JSON:', error);
+            return;
+        }
+        try {
+            handleWebSocketUpdate(update);
+        } catch (error) {
+            console.error('[WebSocket] Error processing update:', error, 'Update was:', update);
+        }
     };
 
     ws.onclose = (event) => {
         console.log(`[WebSocket] Connection closed (code: ${event.code}, reason: ${event.reason})`);
-        console.log('[WebSocket] Attempting to reconnect in 1 second...');
         connectionStatus = 'reconnecting';
         updateStatusIndicator();
-        setTimeout(connectWebSocket, 1000);
+        console.log(`[WebSocket] Scheduling reconnect in ${wsReconnectDelay}ms`);
+        setTimeout(connectWebSocket, wsReconnectDelay);
+        // Exponential backoff: double delay up to max
+        wsReconnectDelay = Math.min(wsReconnectDelay * 2, WS_RECONNECT_MAX_DELAY);
     };
 
     ws.onerror = (error) => {
@@ -98,10 +130,11 @@ function handleWebSocketUpdate(update) {
             break;
             
         case 'delete':
-            console.log(`[WebSocket] Removing message with ID: ${update.data.id}`);
+            const deleteId = Number(update.data.id);
+            console.log(`[WebSocket] Removing message with ID: ${deleteId}`);
             // Remove deleted message
-            currentMessages = currentMessages.filter(msg => msg.id !== update.data.id);
-            const messageElement = document.querySelector(`#${update.data.id}`);
+            currentMessages = currentMessages.filter(msg => msg.id !== deleteId);
+            const messageElement = document.getElementById(String(deleteId));
             if (messageElement) {
                 messageElement.remove();
                 console.log('[WebSocket] Message removed from DOM');
@@ -285,6 +318,7 @@ async function postMessage(event) {
     if (message) {
         try {
             console.log('[API] Submitting new message');
+            console.log(`[API] WebSocket state: ${ws ? ws.readyState : 'no ws object'} (0=CONNECTING, 1=OPEN, 2=CLOSING, 3=CLOSED)`);
             isSubmitting = true;
             form.classList.add('form-disabled');
 
@@ -297,10 +331,14 @@ async function postMessage(event) {
             });
 
             if (response.ok) {
-                console.log('[API] Message submitted successfully');
+                console.log('[API] Message submitted successfully — waiting for WebSocket broadcast');
                 input.value = '';
+                if (!ws || ws.readyState !== WebSocket.OPEN) {
+                    console.warn('[API] WebSocket is not open — message was saved but may not appear until reconnect. Re-fetching messages.');
+                    fetchMessages();
+                }
             } else {
-                throw new Error('Failed to post message');
+                throw new Error(`Failed to post message (status: ${response.status})`);
             }
         } catch (error) {
             console.error('[API] Error submitting message:', error);
@@ -354,7 +392,10 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchMessages().then(() => {
         // Handle anchor navigation after messages are loaded
         handleAnchorNavigation();
-        // Connect WebSocket only after messages are loaded
+    }).catch((error) => {
+        console.error('[Init] fetchMessages failed, will still connect WebSocket:', error);
+    }).finally(() => {
+        // Always connect WebSocket, even if initial fetch failed
         connectWebSocket();
     });
 

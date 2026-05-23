@@ -61,11 +61,19 @@ wss.on('connection', (ws, req) => {
 
 // Broadcast function to send updates to all connected clients
 function broadcastUpdate(type, data) {
-    const message = JSON.stringify({ type, data });
+    let message;
+    try {
+        message = JSON.stringify({ type, data });
+    } catch (error) {
+        console.error(`[WebSocket] Failed to serialize broadcast message:`, error);
+        console.error(`[WebSocket] Data was:`, data);
+        return;
+    }
+    
     let successCount = 0;
     let failureCount = 0;
     
-    console.log(`[WebSocket] Broadcasting ${type} update to ${clients.size} clients`);
+    console.log(`[WebSocket] Broadcasting ${type} update to ${clients.size} clients, payload: ${message}`);
     
     clients.forEach(client => {
         if (client.readyState === WebSocket.OPEN) {
@@ -152,7 +160,7 @@ app.post('/api/admin/login', async (req, res) => {
 });
 
 app.delete('/api/admin/messages/:id', requireAuth, (req, res) => {
-    const { id } = req.params;
+    const id = Number(req.params.id);
 
     try {
         console.log(`[API] Deleting message with ID: ${id}`);
@@ -194,6 +202,14 @@ app.post('/api/messages', (req, res) => {
             ).get(result.lastInsertRowid);
             
             console.log(`[API] Message saved with ID: ${result.lastInsertRowid}`);
+            console.log(`[API] Fetched message for broadcast:`, newMessage ? JSON.stringify(newMessage) : 'UNDEFINED - message not found!');
+            
+            if (!newMessage) {
+                console.error(`[API] CRITICAL: Could not fetch newly inserted message with rowid ${result.lastInsertRowid}`);
+                res.sendStatus(200);
+                return;
+            }
+            
             // Broadcast the new message to all clients
             broadcastUpdate('new', newMessage);
             
