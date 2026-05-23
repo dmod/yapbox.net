@@ -195,11 +195,11 @@ button:hover {
     }
 }
 
-/* Status indicator */
-.status-indicator {
+/* Status bar (unified status + search) */
+.status-bar {
     position: fixed;
     top: 20px;
-    right: 80px;
+    right: 20px;
     display: flex;
     align-items: center;
     gap: 6px;
@@ -212,6 +212,11 @@ button:hover {
     z-index: 1000;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     white-space: nowrap;
+    transition: border-radius 0.3s ease;
+}
+
+.status-bar.search-expanded {
+    border-radius: 16px;
 }
 
 .status-dot {
@@ -252,33 +257,13 @@ button:hover {
     font-family: 'Courier New', monospace;
 }
 
-.search-container {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: #ffffff;
-    border: 1px solid #cccccc;
-    border-radius: 50px;
-    padding: 8px;
-    transition: all 0.3s ease;
-    z-index: 1000;
-    width: 40px;
-    overflow: hidden;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-
-.search-container.expanded {
-    width: 300px;
-    border-radius: 20px;
-    justify-content: flex-start;
+.search-separator {
+    transition: opacity 0.2s ease;
 }
 
 .search-icon {
-    width: 24px;
-    height: 24px;
+    width: 18px;
+    height: 18px;
     fill: #999999;
     flex-shrink: 0;
     cursor: pointer;
@@ -290,26 +275,20 @@ button:hover {
 }
 
 .search-input-container {
-    position: absolute;
-    left: 40px;
-    top: 50%;
-    transform: translateY(-50%);
-    flex-grow: 1;
     display: flex;
     flex-direction: column;
+    max-width: 0;
     opacity: 0;
+    overflow: hidden;
     pointer-events: none;
-    transition: opacity 0.2s ease;
+    transition: max-width 0.3s ease, opacity 0.2s ease;
 }
 
-.search-container.expanded .search-input-container {
-    position: relative;
-    left: auto;
-    top: auto;
-    transform: none;
+.status-bar.search-expanded .search-input-container {
+    max-width: 220px;
     opacity: 1;
     pointer-events: auto;
-    margin-left: 8px;
+    margin-left: 4px;
 }
 
 #search-input {
@@ -333,12 +312,12 @@ button:hover {
     overflow: hidden;
 }
 
-.search-container.expanded .search-results-count {
+.status-bar.search-expanded .search-results-count {
     opacity: 1;
     height: auto;
 }
 
-.search-container.expanded.has-query .search-results-count {
+.status-bar.search-expanded.has-query .search-results-count {
     padding-top: 4px;
     margin-top: 4px;
     border-top: 1px solid #eee;

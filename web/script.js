@@ -160,7 +160,7 @@ function filterMessages() {
     const query = searchQuery.toLowerCase();
     const messagesContainer = document.getElementById('messages');
     const messageElements = messagesContainer.getElementsByClassName('message');
-    const searchContainer = document.querySelector('.search-container');
+    const statusBar = document.querySelector('.status-bar');
     const resultsCountElement = document.querySelector('.search-results-count');
     let visibleCount = 0;
 
@@ -178,10 +178,10 @@ function filterMessages() {
 
     // Update search container classes and results count
     if (query) {
-        searchContainer.classList.add('has-query');
+        statusBar.classList.add('has-query');
         resultsCountElement.textContent = `${visibleCount} result${visibleCount !== 1 ? 's' : ''} found`;
     } else {
-        searchContainer.classList.remove('has-query');
+        statusBar.classList.remove('has-query');
         resultsCountElement.textContent = '';
     }
 
@@ -317,21 +317,21 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('message-form').addEventListener('submit', postMessage);
     
     // Add search container click handler
-    const searchContainer = document.querySelector('.search-container');
+    const statusBar = document.querySelector('.status-bar');
     const searchIcon = document.querySelector('.search-icon');
     const searchInput = document.getElementById('search-input');
 
     searchIcon.addEventListener('click', () => {
-        searchContainer.classList.add('expanded');
+        statusBar.classList.add('search-expanded');
         searchInput.focus();
     });
 
     // Close search when clicking outside
     document.addEventListener('click', (e) => {
-        if (!searchContainer.contains(e.target) && searchContainer.classList.contains('expanded')) {
+        if (!statusBar.contains(e.target) && statusBar.classList.contains('search-expanded')) {
             if (!searchInput.value) {
-                searchContainer.classList.remove('expanded');
-                searchContainer.classList.remove('has-query');
+                statusBar.classList.remove('search-expanded');
+                statusBar.classList.remove('has-query');
             }
         }
     });
