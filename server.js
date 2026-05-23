@@ -1,5 +1,5 @@
 const express = require('express');
-const bodyParser = require('body-parser');
+
 const path = require('path');
 const sqlite3 = require('sqlite3');
 const db3 = new sqlite3.verbose().Database;
@@ -112,7 +112,7 @@ async function initializeDatabase() {
     }
 }
 
-app.use(bodyParser.json());
+app.use(express.json());
 app.use(express.static(path.join(__dirname, 'web')));
 
 // Admin authentication function
