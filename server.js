@@ -22,6 +22,9 @@ const port = 3000;
 const isProd = process.env.NODE_ENV === 'production';
 const dbPath = isProd ? '/data/messages.db' : './dev.db';
 
+console.log(`[startup] Environment: ${isProd ? 'production' : 'development'} (NODE_ENV=${process.env.NODE_ENV || 'undefined'})`);
+console.log(`[startup] Database path: ${path.resolve(dbPath)}`);
+
 // WebSocket clients store
 const clients = new Set();
 

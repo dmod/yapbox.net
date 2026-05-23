@@ -42,6 +42,7 @@ let isSubmitting = false;
 let currentMessages = [];
 let searchQuery = '';
 let ws = null;
+let scrollIndicatorHideTimer = null;
 
 function connectWebSocket() {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -82,6 +83,9 @@ function handleWebSocketUpdate(update) {
             messagesDiv.insertAdjacentHTML('afterbegin', newMessageHtml);
             updateMessageCount(currentMessages.length);
             showFeedbackAnimation();
+            // Update scroll indicator and labels
+            refreshIdScaleLabels();
+            scheduleScrollIndicatorUpdate();
             console.log('[WebSocket] New message added successfully');
             break;
             
@@ -97,6 +101,9 @@ function handleWebSocketUpdate(update) {
                 console.log('[WebSocket] Message element not found in DOM');
             }
             updateMessageCount(currentMessages.length);
+            // Update scroll indicator and labels
+            refreshIdScaleLabels();
+            scheduleScrollIndicatorUpdate();
             console.log('[WebSocket] Message deletion processed');
             break;
             
@@ -146,6 +153,10 @@ function filterMessages() {
         searchContainer.classList.remove('has-query');
         resultsCountElement.textContent = '';
     }
+
+    // Update indicators since visibility changed
+    refreshIdScaleLabels();
+    scheduleScrollIndicatorUpdate();
 }
 
 async function fetchMessages() {
@@ -163,6 +174,8 @@ async function fetchMessages() {
 
         // Update the count
         updateMessageCount(currentMessages.length);
+        refreshIdScaleLabels();
+        scheduleScrollIndicatorUpdate();
         console.log('[API] Initial messages loaded and displayed');
         
         return currentMessages; // Return the messages for promise chaining
@@ -312,9 +325,139 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Connect WebSocket
     connectWebSocket();
+
+    // Scroll indicator setup
+    setupScrollIndicator();
+    window.addEventListener('resize', scheduleScrollIndicatorUpdate);
 });
 
 // Optional: Remove the animation class when it's done
 document.querySelector('.slogan').addEventListener('animationend', function () {
     this.classList.remove('jiggle');
 }); 
+
+// =============== Scroll Indicator & ID Scale ===============
+function getVisibleMessageIds() {
+    const container = document.getElementById('messages');
+    const elements = Array.from(container.getElementsByClassName('message'))
+        .filter(el => !el.classList.contains('filtered-out'));
+    const containerRect = container.getBoundingClientRect();
+
+    const visible = [];
+    for (const el of elements) {
+        const rect = el.getBoundingClientRect();
+        const isVisible = rect.bottom > containerRect.top && rect.top < containerRect.bottom;
+        if (isVisible) {
+            const id = parseInt(el.id, 10);
+            if (!Number.isNaN(id)) visible.push({ id, top: rect.top });
+        }
+    }
+    // Messages are rendered newest first (higher id) at top
+    visible.sort((a, b) => b.id - a.id);
+    return visible.map(v => v.id);
+}
+
+function setupScrollIndicator() {
+    const container = document.getElementById('messages');
+    if (!container) return;
+    container.addEventListener('scroll', () => {
+        updateScrollIndicator();
+        showScrollIndicatorTemporarily();
+    }, { passive: true });
+}
+
+function scheduleScrollIndicatorUpdate() {
+    // Defer to allow DOM layout to settle
+    requestAnimationFrame(() => {
+        updateScrollIndicator();
+        positionScrollIndicator();
+        positionIdScaleLabels();
+    });
+}
+
+function updateScrollIndicator() {
+    const indicator = document.getElementById('scroll-id-indicator');
+    const ids = getVisibleMessageIds();
+    if (!indicator) return;
+    if (ids.length === 0) {
+        indicator.textContent = '';
+        indicator.classList.remove('visible');
+        return;
+    }
+    // Choose the first visible message id (closest to top inside container)
+    const currentId = ids[0];
+    indicator.textContent = `#${currentId}`;
+}
+
+function showScrollIndicatorTemporarily() {
+    const indicator = document.getElementById('scroll-id-indicator');
+    if (!indicator) return;
+    indicator.classList.add('visible');
+    if (scrollIndicatorHideTimer) clearTimeout(scrollIndicatorHideTimer);
+    scrollIndicatorHideTimer = setTimeout(() => {
+        indicator.classList.remove('visible');
+    }, 700);
+}
+
+function refreshIdScaleLabels() {
+    const newestEl = document.getElementById('id-label-newest');
+    const oldestEl = document.getElementById('id-label-oldest');
+    const container = document.getElementById('messages');
+    if (!newestEl || !oldestEl || !container) return;
+
+    const elements = Array.from(container.getElementsByClassName('message'))
+        .filter(el => !el.classList.contains('filtered-out'));
+    if (elements.length === 0) {
+        newestEl.textContent = '#';
+        oldestEl.textContent = '#';
+        return;
+    }
+    const ids = elements.map(el => parseInt(el.id, 10)).filter(n => !Number.isNaN(n));
+    if (ids.length === 0) return;
+    const newest = Math.max(...ids);
+    const oldest = Math.min(...ids);
+    newestEl.textContent = `#${newest}`;
+    oldestEl.textContent = `#${oldest}`;
+
+    // Ensure positioned next to the container's scrollbar
+    positionIdScaleLabels();
+}
+
+function positionScrollIndicator() {
+    const indicator = document.getElementById('scroll-id-indicator');
+    const container = document.getElementById('messages');
+    if (!indicator || !container) return;
+    const rect = container.getBoundingClientRect();
+
+    // Place just inside the container's right edge, vertically centered
+    const left = Math.round(rect.right - indicator.offsetWidth - 8);
+    const top = Math.round(rect.top + rect.height / 2);
+    indicator.style.left = `${left}px`;
+    indicator.style.top = `${top}px`;
+    indicator.style.right = '';
+}
+
+function positionIdScaleLabels() {
+    const newestEl = document.getElementById('id-label-newest');
+    const oldestEl = document.getElementById('id-label-oldest');
+    const container = document.getElementById('messages');
+    if (!newestEl || !oldestEl || !container) return;
+
+    const rect = container.getBoundingClientRect();
+
+    // Newest (top-right inside container)
+    const newestLeft = Math.round(rect.right - newestEl.offsetWidth - 8);
+    const newestTop = Math.round(rect.top + 8);
+    newestEl.style.left = `${newestLeft}px`;
+    newestEl.style.top = `${newestTop}px`;
+    newestEl.style.right = '';
+    newestEl.style.bottom = '';
+
+    // Oldest (bottom-right inside container)
+    const oldestLeft = Math.round(rect.right - oldestEl.offsetWidth - 8);
+    const oldestTop = Math.round(rect.bottom - oldestEl.offsetHeight - 8);
+    oldestEl.style.left = `${oldestLeft}px`;
+    oldestEl.style.top = `${oldestTop}px`;
+    oldestEl.style.right = '';
+    oldestEl.style.bottom = '';
+}
