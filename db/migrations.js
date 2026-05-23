@@ -1,8 +1,8 @@
 const fs = require('fs');
 const path = require('path');
 
-async function initMigrationTable(db) {
-    await db.exec(`
+function initMigrationTable(db) {
+    db.exec(`
         CREATE TABLE IF NOT EXISTS migrations (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             version INTEGER NOT NULL,
@@ -11,12 +11,12 @@ async function initMigrationTable(db) {
     `);
 }
 
-async function getAppliedMigrations(db) {
-    return await db.all('SELECT version FROM migrations ORDER BY version ASC');
+function getAppliedMigrations(db) {
+    return db.prepare('SELECT version FROM migrations ORDER BY version ASC').all();
 }
 
-async function runMigrations(db) {
-    await initMigrationTable(db);
+function runMigrations(db) {
+    initMigrationTable(db);
     
     // Get all migration files
     const migrationsDir = path.join(__dirname, '..', 'migrations');
@@ -26,7 +26,7 @@ async function runMigrations(db) {
         .sort((a, b) => a.version - b.version);
 
     // Get applied migrations
-    const appliedMigrations = await getAppliedMigrations(db);
+    const appliedMigrations = getAppliedMigrations(db);
     const appliedVersions = new Set(appliedMigrations.map(m => m.version));
 
     console.log(`Applied migrations: ${appliedMigrations.map(m => m.version).join(', ')}`);
@@ -35,8 +35,8 @@ async function runMigrations(db) {
     for (const migration of migrations) {
         if (!appliedVersions.has(migration.version)) {
             console.log(`Running migration version ${migration.version}...`);
-            await migration.up(db);
-            await db.run('INSERT INTO migrations (version) VALUES (?)', migration.version);
+            migration.up(db);
+            db.prepare('INSERT INTO migrations (version) VALUES (?)').run(migration.version);
             console.log(`Migration version ${migration.version} completed`);
         }
     }

@@ -1,7 +1,7 @@
 module.exports = {
     version: 1,
-    up: async (db) => {
-        await db.exec(`
+    up: (db) => {
+        db.exec(`
             CREATE TABLE IF NOT EXISTS messages (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 text TEXT NOT NULL,

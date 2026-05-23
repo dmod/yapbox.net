@@ -1,9 +1,7 @@
 const express = require('express');
 
 const path = require('path');
-const sqlite3 = require('sqlite3');
-const db3 = new sqlite3.verbose().Database;
-const { open } = require('sqlite');
+const { DatabaseSync } = require('node:sqlite');
 const { runMigrations } = require('./db/migrations');
 const crypto = require('crypto');
 const session = require('express-session');
@@ -97,14 +95,11 @@ function requireAuth(req, res, next) {
     }
 }
 
-async function initializeDatabase() {
+function initializeDatabase() {
     try {
-        db = await open({
-            filename: dbPath,
-            driver: db3
-        });
+        db = new DatabaseSync(dbPath);
 
-        await runMigrations(db);
+        runMigrations(db);
         console.log('Database initialization and migrations completed');
     } catch (error) {
         console.error('Database initialization error:', error);
@@ -142,14 +137,14 @@ app.post('/api/admin/login', async (req, res) => {
     }
 });
 
-app.delete('/api/admin/messages/:id', requireAuth, async (req, res) => {
+app.delete('/api/admin/messages/:id', requireAuth, (req, res) => {
     const { id } = req.params;
 
     try {
         console.log(`[API] Deleting message with ID: ${id}`);
-        await db.run('DELETE FROM messages WHERE id = ?', id);
+        db.prepare('DELETE FROM messages WHERE id = ?').run(id);
         // Broadcast deletion to all clients
-        await broadcastUpdate('delete', { id });
+        broadcastUpdate('delete', { id });
         console.log(`[API] Message ${id} deleted successfully`);
         res.sendStatus(200);
     } catch (error) {
@@ -158,9 +153,9 @@ app.delete('/api/admin/messages/:id', requireAuth, async (req, res) => {
     }
 });
 
-app.get('/api/messages', async (req, res) => {
+app.get('/api/messages', (req, res) => {
     try {
-        const messages = await db.all('SELECT * FROM messages ORDER BY timestamp DESC');
+        const messages = db.prepare('SELECT * FROM messages ORDER BY timestamp DESC').all();
         res.json(messages);
     } catch (error) {
         console.error('Error fetching messages:', error);
@@ -168,27 +163,25 @@ app.get('/api/messages', async (req, res) => {
     }
 });
 
-app.post('/api/messages', async (req, res) => {
+app.post('/api/messages', (req, res) => {
     const messageText = req.body.message;
     const ip = req.ip || req.socket.remoteAddress;
 
     if (messageText && messageText.length <= 3000) {
         try {
             console.log(`[API] Incoming message from ${ip}: ${messageText}`);
-            const result = await db.run(
-                'INSERT INTO messages (text, timestamp, ip_address) VALUES (?, ?, ?)',
-                [messageText, new Date().toISOString(), ip]
-            );
+            const result = db.prepare(
+                'INSERT INTO messages (text, timestamp, ip_address) VALUES (?, ?, ?)'
+            ).run(messageText, new Date().toISOString(), ip);
             
             // Fetch the newly inserted message
-            const newMessage = await db.get(
-                'SELECT * FROM messages WHERE id = ?',
-                result.lastID
-            );
+            const newMessage = db.prepare(
+                'SELECT * FROM messages WHERE id = ?'
+            ).get(result.lastInsertRowid);
             
-            console.log(`[API] Message saved with ID: ${result.lastID}`);
+            console.log(`[API] Message saved with ID: ${result.lastInsertRowid}`);
             // Broadcast the new message to all clients
-            await broadcastUpdate('new', newMessage);
+            broadcastUpdate('new', newMessage);
             
             res.sendStatus(200);
         } catch (error) {
@@ -205,23 +198,24 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'web', 'index.html'));
 });
 
-app.get('/api/message-count', async (req, res) => {
+app.get('/api/message-count', (req, res) => {
     try {
-        const result = await db.get('SELECT MAX(id) as count FROM messages');
-        res.json({ count: result.count || 0 });
+        const result = db.prepare('SELECT MAX(id) as count FROM messages').get();
+        res.json({ count: result?.count || 0 });
     } catch (error) {
         console.error('Error fetching message count:', error);
         res.status(500).send('Internal Server Error');
     }
 });
 
-initializeDatabase().then(() => {
+try {
+    initializeDatabase();
     server.listen(port, () => {
         console.log(`Server running on port ${port}`);
     });
-}).catch(err => {
+} catch (err) {
     console.error('Failed to start server:', err);
-});
+}
 
 // Graceful shutdown - close server and release port
 function shutdown() {
