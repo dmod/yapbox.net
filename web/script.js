@@ -43,6 +43,8 @@ let currentMessages = [];
 let searchQuery = '';
 let ws = null;
 let scrollIndicatorHideTimer = null;
+let otherYappers = 0;
+let connectionStatus = 'disconnected'; // 'connected', 'disconnected', 'reconnecting'
 
 function connectWebSocket() {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -52,6 +54,8 @@ function connectWebSocket() {
 
     ws.onopen = () => {
         console.log('[WebSocket] Connection established');
+        connectionStatus = 'connected';
+        updateStatusIndicator();
     };
 
     ws.onmessage = (event) => {
@@ -63,11 +67,15 @@ function connectWebSocket() {
     ws.onclose = (event) => {
         console.log(`[WebSocket] Connection closed (code: ${event.code}, reason: ${event.reason})`);
         console.log('[WebSocket] Attempting to reconnect in 1 second...');
+        connectionStatus = 'reconnecting';
+        updateStatusIndicator();
         setTimeout(connectWebSocket, 1000);
     };
 
     ws.onerror = (error) => {
         console.error('[WebSocket] Connection error:', error);
+        connectionStatus = 'disconnected';
+        updateStatusIndicator();
     };
 }
 
@@ -107,9 +115,32 @@ function handleWebSocketUpdate(update) {
             console.log('[WebSocket] Message deletion processed');
             break;
             
+        case 'presence':
+            console.log(`[WebSocket] Presence update: ${update.data.count} other yappers`);
+            otherYappers = update.data.count;
+            updateStatusIndicator();
+            break;
+
         default:
             console.warn(`[WebSocket] Unknown update type received: ${update.type}`);
     }
+}
+
+function updateStatusIndicator() {
+    const dot = document.getElementById('status-dot');
+    const statusText = document.getElementById('status-text');
+    const yappersText = document.getElementById('yappers-count');
+
+    if (!dot || !statusText || !yappersText) return;
+
+    // Update connection dot and text
+    dot.className = 'status-dot ' + connectionStatus;
+    statusText.textContent = connectionStatus === 'connected' ? 'connected' :
+        connectionStatus === 'reconnecting' ? 'reconnecting' : 'disconnected';
+
+    // Update yappers count
+    const noun = otherYappers === 1 ? 'yapper' : 'yappers';
+    yappersText.textContent = `${otherYappers} other ${noun} around`;
 }
 
 function updateMessageCount(count) {
@@ -317,14 +348,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // Handle anchor navigation on page load
     window.addEventListener('load', handleAnchorNavigation);
     
-    // Initial load of messages
+    // Initial load of messages, then connect WebSocket
+    // (WebSocket must connect AFTER fetch completes to avoid a race where
+    // incoming WS messages are overwritten by the pending fetch response)
     fetchMessages().then(() => {
         // Handle anchor navigation after messages are loaded
         handleAnchorNavigation();
+        // Connect WebSocket only after messages are loaded
+        connectWebSocket();
     });
-    
-    // Connect WebSocket
-    connectWebSocket();
 
     // Scroll indicator setup
     setupScrollIndicator();

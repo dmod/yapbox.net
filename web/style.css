@@ -195,6 +195,63 @@ button:hover {
     }
 }
 
+/* Status indicator */
+.status-indicator {
+    position: fixed;
+    top: 20px;
+    right: 80px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background-color: #ffffff;
+    border: 1px solid #cccccc;
+    border-radius: 50px;
+    padding: 8px 14px;
+    font-size: 12px;
+    color: #666666;
+    z-index: 1000;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    white-space: nowrap;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    transition: background-color 0.3s ease;
+}
+
+.status-dot.connected {
+    background-color: #4caf50;
+}
+
+.status-dot.disconnected {
+    background-color: #f44336;
+}
+
+.status-dot.reconnecting {
+    background-color: #ff9800;
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+.status-text {
+    font-family: 'Courier New', monospace;
+}
+
+.status-separator {
+    color: #cccccc;
+}
+
+.yappers-count {
+    font-family: 'Courier New', monospace;
+}
+
 .search-container {
     position: fixed;
     top: 20px;

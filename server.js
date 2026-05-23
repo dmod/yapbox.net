@@ -26,6 +26,16 @@ console.log(`[startup] Database path: ${path.resolve(dbPath)}`);
 // WebSocket clients store
 const clients = new Set();
 
+// Broadcast presence count to all clients (each client sees "others" = total - 1)
+function broadcastPresence() {
+    clients.forEach(client => {
+        if (client.readyState === WebSocket.OPEN) {
+            const othersCount = clients.size - 1;
+            client.send(JSON.stringify({ type: 'presence', data: { count: othersCount } }));
+        }
+    });
+}
+
 // WebSocket connection handling
 wss.on('connection', (ws, req) => {
     const clientId = Math.random().toString(36).substring(7);
@@ -34,10 +44,14 @@ wss.on('connection', (ws, req) => {
     console.log(`[WebSocket] Total connected clients: ${clients.size}`);
     console.log(`[WebSocket] Client IP: ${req.socket.remoteAddress}`);
 
+    // Send presence to the new client and broadcast updated count to all
+    broadcastPresence();
+
     ws.on('close', () => {
         clients.delete(ws);
         console.log(`[WebSocket] Client disconnected (ID: ${clientId})`);
         console.log(`[WebSocket] Remaining connected clients: ${clients.size}`);
+        broadcastPresence();
     });
 
     ws.on('error', (error) => {
@@ -46,7 +60,7 @@ wss.on('connection', (ws, req) => {
 });
 
 // Broadcast function to send updates to all connected clients
-async function broadcastUpdate(type, data) {
+function broadcastUpdate(type, data) {
     const message = JSON.stringify({ type, data });
     let successCount = 0;
     let failureCount = 0;
