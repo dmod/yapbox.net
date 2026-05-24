@@ -54,25 +54,23 @@ function connectWebSocket() {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}`;
     console.log(`[WebSocket] Attempting to connect to ${wsUrl} (backoff: ${wsReconnectDelay}ms)`);
-    
-    // Clean up old WebSocket if it exists
+
     if (ws) {
         ws.onopen = null;
         ws.onmessage = null;
         ws.onclose = null;
         ws.onerror = null;
     }
-    
+
     ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
         console.log('[WebSocket] Connection established');
         connectionStatus = 'connected';
-        wsReconnectDelay = 1000; // Reset backoff on successful connection
+        wsReconnectDelay = 1000;
         updateStatusIndicator();
-        // On reconnect, re-fetch messages to catch anything missed while disconnected
         if (wsHasConnectedBefore) {
-            console.log('[WebSocket] Reconnected — re-fetching messages to sync state');
+            console.log('[WebSocket] Reconnected \u2014 re-fetching messages to sync state');
             fetchMessages();
         }
         wsHasConnectedBefore = true;
@@ -80,17 +78,10 @@ function connectWebSocket() {
 
     ws.onmessage = (event) => {
         console.log('[WebSocket] Received raw message:', event.data);
-        let update;
         try {
-            update = JSON.parse(event.data);
+            handleWebSocketUpdate(JSON.parse(event.data));
         } catch (error) {
-            console.error('[WebSocket] Failed to parse message JSON:', error);
-            return;
-        }
-        try {
-            handleWebSocketUpdate(update);
-        } catch (error) {
-            console.error('[WebSocket] Error processing update:', error, 'Update was:', update);
+            console.error('[WebSocket] Error processing message:', error);
         }
     };
 
@@ -100,7 +91,6 @@ function connectWebSocket() {
         updateStatusIndicator();
         console.log(`[WebSocket] Scheduling reconnect in ${wsReconnectDelay}ms`);
         setTimeout(connectWebSocket, wsReconnectDelay);
-        // Exponential backoff: double delay up to max
         wsReconnectDelay = Math.min(wsReconnectDelay * 2, WS_RECONNECT_MAX_DELAY);
     };
 
@@ -116,38 +106,26 @@ function handleWebSocketUpdate(update) {
     switch (update.type) {
         case 'new':
             console.log('[WebSocket] Adding new message:', update.data);
-            // Add new message at the beginning
             currentMessages.unshift(update.data);
-            const messagesDiv = document.getElementById('messages');
-            const newMessageHtml = formatMessage(update.data);
-            messagesDiv.insertAdjacentHTML('afterbegin', newMessageHtml);
+            document.getElementById('messages').insertAdjacentHTML('afterbegin', formatMessage(update.data));
             updateMessageCount(currentMessages.length);
             showFeedbackAnimation();
-            // Update scroll indicator and labels
             refreshIdScaleLabels();
             scheduleScrollIndicatorUpdate();
             console.log('[WebSocket] New message added successfully');
             break;
-            
+
         case 'delete':
             const deleteId = Number(update.data.id);
             console.log(`[WebSocket] Removing message with ID: ${deleteId}`);
-            // Remove deleted message
             currentMessages = currentMessages.filter(msg => msg.id !== deleteId);
-            const messageElement = document.getElementById(String(deleteId));
-            if (messageElement) {
-                messageElement.remove();
-                console.log('[WebSocket] Message removed from DOM');
-            } else {
-                console.log('[WebSocket] Message element not found in DOM');
-            }
+            document.getElementById(String(deleteId))?.remove();
             updateMessageCount(currentMessages.length);
-            // Update scroll indicator and labels
             refreshIdScaleLabels();
             scheduleScrollIndicatorUpdate();
             console.log('[WebSocket] Message deletion processed');
             break;
-            
+
         case 'presence':
             console.log(`[WebSocket] Presence update: ${update.data.count} other yappers`);
             otherYappers = update.data.count;
@@ -227,28 +205,19 @@ async function fetchMessages() {
     const messagesDiv = document.getElementById('messages');
     try {
         console.log('[API] Fetching initial messages');
-        messagesDiv.classList.add('loading');
-
         const response = await fetch('/api/messages');
         currentMessages = await response.json();
         console.log(`[API] Received ${currentMessages.length} messages`);
-
-        messagesDiv.innerHTML = currentMessages.map(message => formatMessage(message)).join('');
-        filterMessages(); // Apply any existing filter
-
-        // Update the count
+        messagesDiv.innerHTML = currentMessages.map(formatMessage).join('');
+        filterMessages();
         updateMessageCount(currentMessages.length);
         refreshIdScaleLabels();
         scheduleScrollIndicatorUpdate();
         console.log('[API] Initial messages loaded and displayed');
-        
-        return currentMessages; // Return the messages for promise chaining
     } catch (error) {
         console.error('[API] Error fetching messages:', error);
-        messagesDiv.innerHTML = '<div class="messages-loading">Error loading messages. Please try again.</div>';
-        throw error; // Re-throw to handle in caller
-    } finally {
-        messagesDiv.classList.remove('loading');
+        messagesDiv.innerHTML = 'Error loading messages. Please try again.';
+        throw error;
     }
 }
 
@@ -324,17 +293,15 @@ async function postMessage(event) {
 
             const response = await fetch('/api/messages', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ message }),
             });
 
             if (response.ok) {
-                console.log('[API] Message submitted successfully — waiting for WebSocket broadcast');
+                console.log('[API] Message submitted successfully \u2014 waiting for WebSocket broadcast');
                 input.value = '';
                 if (!ws || ws.readyState !== WebSocket.OPEN) {
-                    console.warn('[API] WebSocket is not open — message was saved but may not appear until reconnect. Re-fetching messages.');
+                    console.warn('[API] WebSocket is not open \u2014 message was saved but may not appear until reconnect. Re-fetching messages.');
                     fetchMessages();
                 }
             } else {
@@ -380,22 +347,13 @@ document.addEventListener('DOMContentLoaded', () => {
         filterMessages();
     });
     
-    // Handle hash changes for anchor navigation
     window.addEventListener('hashchange', handleAnchorNavigation);
-    
-    // Handle anchor navigation on page load
-    window.addEventListener('load', handleAnchorNavigation);
-    
-    // Initial load of messages, then connect WebSocket
-    // (WebSocket must connect AFTER fetch completes to avoid a race where
-    // incoming WS messages are overwritten by the pending fetch response)
+
     fetchMessages().then(() => {
-        // Handle anchor navigation after messages are loaded
         handleAnchorNavigation();
     }).catch((error) => {
         console.error('[Init] fetchMessages failed, will still connect WebSocket:', error);
     }).finally(() => {
-        // Always connect WebSocket, even if initial fetch failed
         connectWebSocket();
     });
 
@@ -412,22 +370,20 @@ document.querySelector('.slogan').addEventListener('animationend', function () {
 // =============== Scroll Indicator & ID Scale ===============
 function getVisibleMessageIds() {
     const container = document.getElementById('messages');
-    const elements = Array.from(container.getElementsByClassName('message'))
-        .filter(el => !el.classList.contains('filtered-out'));
     const containerRect = container.getBoundingClientRect();
+    const ids = [];
 
-    const visible = [];
-    for (const el of elements) {
+    for (const el of container.getElementsByClassName('message')) {
+        if (el.classList.contains('filtered-out')) continue;
         const rect = el.getBoundingClientRect();
-        const isVisible = rect.bottom > containerRect.top && rect.top < containerRect.bottom;
-        if (isVisible) {
+        if (rect.bottom > containerRect.top && rect.top < containerRect.bottom) {
             const id = parseInt(el.id, 10);
-            if (!Number.isNaN(id)) visible.push({ id, top: rect.top });
+            if (!Number.isNaN(id)) ids.push(id);
         }
     }
-    // Messages are rendered newest first (higher id) at top
-    visible.sort((a, b) => b.id - a.id);
-    return visible.map(v => v.id);
+
+    ids.sort((a, b) => b.id - a.id);
+    return ids;
 }
 
 function setupScrollIndicator() {
@@ -491,9 +447,6 @@ function refreshIdScaleLabels() {
     const oldest = Math.min(...ids);
     newestEl.textContent = `#${newest}`;
     oldestEl.textContent = `#${oldest}`;
-
-    // Ensure positioned next to the container's scrollbar
-    positionIdScaleLabels();
 }
 
 function positionScrollIndicator() {

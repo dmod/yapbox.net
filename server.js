@@ -36,7 +36,6 @@ function broadcastPresence() {
     });
 }
 
-// WebSocket connection handling
 wss.on('connection', (ws, req) => {
     const clientId = Math.random().toString(36).substring(7);
     clients.add(ws);
@@ -44,7 +43,6 @@ wss.on('connection', (ws, req) => {
     console.log(`[WebSocket] Total connected clients: ${clients.size}`);
     console.log(`[WebSocket] Client IP: ${req.socket.remoteAddress}`);
 
-    // Send presence to the new client and broadcast updated count to all
     broadcastPresence();
 
     ws.on('close', () => {
@@ -65,16 +63,16 @@ function broadcastUpdate(type, data) {
     try {
         message = JSON.stringify({ type, data });
     } catch (error) {
-        console.error(`[WebSocket] Failed to serialize broadcast message:`, error);
-        console.error(`[WebSocket] Data was:`, data);
+        console.error('[WebSocket] Failed to serialize broadcast message:', error);
+        console.error('[WebSocket] Data was:', data);
         return;
     }
-    
+
     let successCount = 0;
     let failureCount = 0;
-    
+
     console.log(`[WebSocket] Broadcasting ${type} update to ${clients.size} clients, payload: ${message}`);
-    
+
     clients.forEach(client => {
         if (client.readyState === WebSocket.OPEN) {
             try {
@@ -89,7 +87,7 @@ function broadcastUpdate(type, data) {
             failureCount++;
         }
     });
-    
+
     console.log(`[WebSocket] Broadcast complete - Success: ${successCount}, Failures: ${failureCount}`);
 }
 
@@ -142,12 +140,11 @@ app.get('/admin', (req, res) => {
     res.sendFile(path.join(__dirname, 'web', 'admin.html'));
 });
 
-app.post('/api/admin/login', async (req, res) => {
+app.post('/api/admin/login', (req, res) => {
     const { password } = req.body;
 
     try {
-        const isValid = authenticatePassword(password);
-        if (isValid) {
+        if (authenticatePassword(password)) {
             req.session.isAuthenticated = true;
             res.sendStatus(200);
         } else {
@@ -165,7 +162,6 @@ app.delete('/api/admin/messages/:id', requireAuth, (req, res) => {
     try {
         console.log(`[API] Deleting message with ID: ${id}`);
         db.prepare('DELETE FROM messages WHERE id = ?').run(id);
-        // Broadcast deletion to all clients
         broadcastUpdate('delete', { id });
         console.log(`[API] Message ${id} deleted successfully`);
         res.sendStatus(200);
@@ -195,24 +191,21 @@ app.post('/api/messages', (req, res) => {
             const result = db.prepare(
                 'INSERT INTO messages (text, timestamp, ip_address) VALUES (?, ?, ?)'
             ).run(messageText, new Date().toISOString(), ip);
-            
-            // Fetch the newly inserted message
+
             const newMessage = db.prepare(
                 'SELECT * FROM messages WHERE id = ?'
             ).get(result.lastInsertRowid);
-            
+
             console.log(`[API] Message saved with ID: ${result.lastInsertRowid}`);
             console.log(`[API] Fetched message for broadcast:`, newMessage ? JSON.stringify(newMessage) : 'UNDEFINED - message not found!');
-            
+
             if (!newMessage) {
                 console.error(`[API] CRITICAL: Could not fetch newly inserted message with rowid ${result.lastInsertRowid}`);
                 res.sendStatus(200);
                 return;
             }
-            
-            // Broadcast the new message to all clients
+
             broadcastUpdate('new', newMessage);
-            
             res.sendStatus(200);
         } catch (error) {
             console.error('[API] Error inserting message:', error);
@@ -224,19 +217,7 @@ app.post('/api/messages', (req, res) => {
     }
 });
 
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'web', 'index.html'));
-});
 
-app.get('/api/message-count', (req, res) => {
-    try {
-        const result = db.prepare('SELECT MAX(id) as count FROM messages').get();
-        res.json({ count: result?.count || 0 });
-    } catch (error) {
-        console.error('Error fetching message count:', error);
-        res.status(500).send('Internal Server Error');
-    }
-});
 
 try {
     initializeDatabase();

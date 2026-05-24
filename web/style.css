@@ -1,10 +1,11 @@
-html, body {
+html {
     height: 100%;
     margin: 0;
     padding: 0;
 }
 
 body {
+    height: 100%;
     font-family: 'Courier New', monospace;
     background-color: #f0f0f0;
     color: #333333;
@@ -120,8 +121,6 @@ button:hover {
 
 .message-number {
     color: #666;
-    font-family: monospace;
-    font-size: 1em;
     font-weight: bold;
     text-decoration: none;
     transition: color 0.2s ease;
@@ -133,17 +132,10 @@ button:hover {
     text-decoration: underline;
 }
 
-.message-number:visited {
-    color: #666;
-}
-
 .message-number:active {
     color: #000;
 }
 
-.message-ip {
-    font-family: monospace;
-}
 
 /* Disable form while submitting */
 .form-disabled {
@@ -152,7 +144,7 @@ button:hover {
 }
 
 /* Add transition for smooth opacity changes */
-#message-form, #messages {
+#message-form {
     transition: opacity 0.2s ease-in-out;
 }
 
@@ -245,17 +237,11 @@ button:hover {
     50% { opacity: 0.4; }
 }
 
-.status-text {
-    font-family: 'Courier New', monospace;
-}
 
 .status-separator {
     color: #cccccc;
 }
 
-.yappers-count {
-    font-family: 'Courier New', monospace;
-}
 
 .search-separator {
     transition: opacity 0.2s ease;
