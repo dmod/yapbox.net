@@ -109,7 +109,6 @@ function handleWebSocketUpdate(update) {
             currentMessages.unshift(update.data);
             document.getElementById('messages').insertAdjacentHTML('afterbegin', formatMessage(update.data));
             updateMessageCount(currentMessages.length);
-            showFeedbackAnimation();
             refreshIdScaleLabels();
             scheduleScrollIndicatorUpdate();
             console.log('[WebSocket] New message added successfully');
@@ -300,6 +299,7 @@ async function postMessage(event) {
             if (response.ok) {
                 console.log('[API] Message submitted successfully \u2014 waiting for WebSocket broadcast');
                 input.value = '';
+                showFeedbackAnimation();
                 if (!ws || ws.readyState !== WebSocket.OPEN) {
                     console.warn('[API] WebSocket is not open \u2014 message was saved but may not appear until reconnect. Re-fetching messages.');
                     fetchMessages();
